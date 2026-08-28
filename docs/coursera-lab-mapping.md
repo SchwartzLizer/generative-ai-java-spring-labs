@@ -8,7 +8,10 @@ This table maps course topics to original repository evidence. A repository row 
 | Basic Prediction | `labs/02-prediction-model` | Train a simple regression model from CSV data | `./mvnw.cmd -pl labs/02-prediction-model test` | Input validation, immutable records, CSV error context, executable shaded JAR |
 | Sentiment Analysis | `labs/03-sentiment-analysis` | Classify review text using a transparent baseline | `./mvnw.cmd -pl labs/03-sentiment-analysis test` | Case/punctuation normalization, immediate negation, immutable batch API |
 | Product Image Recognition | `labs/04-image-recognition` | Extract image features and rank labels | `./mvnw.cmd -pl labs/04-image-recognition test` | Runtime-generated fixtures, normalized RGB features, documented heuristic limits |
+| Support Chatbot | `labs/05-support-chatbot` | Expose a support assistant through Spring MVC | `./mvnw.cmd -pl labs/05-support-chatbot verify` | Provider port, demo/Gemini profile switch, validation error contract, MVC tests |
+| Recommendation System | `labs/06-recommendation-system` | Rank catalog items from preferences | `./mvnw.cmd -pl labs/06-recommendation-system test` | Immutable domain records, normalized genres, deterministic tie-breaking |
+| Response Template Generator | `labs/07-response-generator` | Generate safe, tone-aware support drafts | `./mvnw.cmd -pl labs/07-response-generator verify` | Bounded prompt factory, tone validation, `201 Created` REST contract, provider adapter |
 
 ## Scope note
 
-The remaining course areas are implemented as separate Spring AI labs and a final project in later modules. They will be linked here after their focused verification passes.
+The final project is implemented in a separate Spring Boot flagship application after the lab modules. It will be linked here after its focused verification passes.
