@@ -1,0 +1,7 @@
+app:
+  ai:
+    provider: ${AI_PROVIDER:demo}
+spring:
+  ai:
+    model:
+      chat: none

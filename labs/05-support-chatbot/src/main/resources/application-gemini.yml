@@ -1,0 +1,15 @@
+app:
+  ai:
+    provider: gemini
+spring:
+  config:
+    activate:
+      on-profile: gemini
+  ai:
+    model:
+      chat: google-genai
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY:}
+        chat:
+          model: gemini-2.5-flash
