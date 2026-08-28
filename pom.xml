@@ -14,6 +14,9 @@
         <module>labs/02-prediction-model</module>
         <module>labs/03-sentiment-analysis</module>
         <module>labs/04-image-recognition</module>
+        <module>labs/05-support-chatbot</module>
+        <module>labs/06-recommendation-system</module>
+        <module>labs/07-response-generator</module>
     </modules>
 
     <properties>
@@ -23,6 +26,8 @@
         <assertj.version>3.27.6</assertj.version>
         <commons-math3.version>3.6.1</commons-math3.version>
         <opencsv.version>5.12.0</opencsv.version>
+        <spring-boot.version>4.1.1</spring-boot.version>
+        <spring-ai.version>2.0.1</spring-ai.version>
     </properties>
 
     <dependencyManagement>
@@ -38,6 +43,20 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
