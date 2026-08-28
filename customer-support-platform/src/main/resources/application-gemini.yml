@@ -1,0 +1,11 @@
+spring:
+  config.activate.on-profile: gemini
+  ai.model.chat: google-genai
+  ai.google.genai.api-key: ${GEMINI_API_KEY:}
+  ai.google.genai.chat.options:
+    model: gemini-2.5-flash
+    temperature: 0.2
+    max-output-tokens: 800
+app.ai:
+  provider: gemini
+  model: gemini-2.5-flash

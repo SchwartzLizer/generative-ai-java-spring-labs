@@ -1,34 +1,85 @@
 # Generative AI Java & Spring Portfolio
 
-Original, test-first Java and Spring Boot implementations inspired by the Coursera *Generative AI for Java and Spring Development* labs. The repository is a Maven monorepo: each learning lab is independently runnable, while the flagship app demonstrates how the same ideas become a maintainable Spring Boot service.
+`customer-support-platform` is a modular-monolith portfolio app for support agents: it stores synthetic customer feedback, runs auditable sentiment/category/urgency analysis, drafts safe responses, and exposes both a REST API and a server-rendered dashboard. The default AI provider is deterministic, so the repository is runnable without credentials.
 
-## Current modules
+[![CI](https://github.com/SchwartzLizer/generative-ai-java-spring-labs/actions/workflows/ci.yml/badge.svg)](https://github.com/SchwartzLizer/generative-ai-java-spring-labs/actions/workflows/ci.yml)
 
-| Course area | Repository evidence | Run |
+## Five-minute reviewer path
+
+1. Read [`docs/architecture.md`](docs/architecture.md) for the request flow and boundaries.
+2. Run the full build: `./mvnw.cmd --batch-mode --no-transfer-progress verify`.
+3. Start PostgreSQL and the app with `copy .env.example .env; docker compose up --build`.
+4. Open `http://localhost:8080/dashboard` with the credentials in your local `.env`.
+5. Try the synthetic API flow below, then inspect `/swagger-ui.html`.
+
+## Flagship features
+
+- Validated, paginated feedback API with UUID resources and structured errors.
+- Append-only AI analyses and response drafts; approve/reject decisions are immutable.
+- Deterministic `demo` provider for offline evaluation and optional Spring AI Gemini adapter.
+- PostgreSQL + Flyway persistence, optimistic locking, health probes, OpenAPI, and correlation IDs.
+- Role-based security: `AGENT` workflow access and `ADMIN` operational access.
+- Thymeleaf dashboard with summary cards, queue filtering, analysis history, and draft history.
+
+Dashboard screenshots are produced from the manual GitHub Actions workflow (`dashboard-screenshot.yml`) after a Docker-capable run; no unverified mockups are committed.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  Client[REST client] --> API[Spring MVC API]
+  Agent[Support agent] --> UI[Thymeleaf dashboard]
+  UI --> API
+  API --> Domain[Feedback + analysis + draft services]
+  Domain --> DB[(PostgreSQL / Flyway)]
+  Domain --> Port[CustomerSupportAiClient]
+  Port --> Demo[Demo rules provider]
+  Port -. optional .-> Gemini[Spring AI Gemini]
+```
+
+See [`docs/architecture.md`](docs/architecture.md) for package ownership, lifecycle transitions, security, and persistence details.
+
+## Quick start
+
+Requirements: Java 21+, Docker Desktop, and the committed Maven Wrapper.
+
+```powershell
+copy .env.example .env
+docker compose up --build
+```
+
+The demo provider is active by default. For Gemini, set `AI_PROVIDER=gemini` and `GEMINI_API_KEY` in your untracked `.env` file. Keys and prompts are never committed or logged.
+
+## Synthetic API example
+
+```powershell
+$credential = New-Object PSCredential("agent", (ConvertTo-SecureString "agent-local-password" -AsPlainText -Force))
+$created = Invoke-RestMethod -Authentication Basic -Credential $credential -Method Post -Uri http://localhost:8080/api/v1/feedback -ContentType 'application/json' -Body '{"customerReference":"CUST-DEMO","message":"The app crashes during checkout"}'
+$id = $created.id
+Invoke-RestMethod -Authentication Basic -Credential $credential -Method Post -Uri "http://localhost:8080/api/v1/feedback/$id/analyses"
+Invoke-RestMethod -Authentication Basic -Credential $credential -Method Post -Uri "http://localhost:8080/api/v1/feedback/$id/response-drafts"
+```
+
+API contract: `POST/GET /api/v1/feedback`, `POST /api/v1/feedback/{id}/analyses`, `POST /api/v1/feedback/{id}/response-drafts`, `PATCH /api/v1/response-drafts/{id}/decision`, `GET /api/v1/dashboard/summary`.
+
+## Repository map
+
+| Area | Path | Evidence command |
 | --- | --- | --- |
-| Module 1 — Environment setup | [`labs/01-ai-environment`](labs/01-ai-environment) | `./mvnw -pl labs/01-ai-environment test` |
-| Module 1 — Basic prediction | [`labs/02-prediction-model`](labs/02-prediction-model) | `./mvnw -pl labs/02-prediction-model test` |
-| Module 1 — Sentiment analysis | [`labs/03-sentiment-analysis`](labs/03-sentiment-analysis) | `./mvnw -pl labs/03-sentiment-analysis test` |
-| Module 1 — Product image recognition | [`labs/04-image-recognition`](labs/04-image-recognition) | `./mvnw -pl labs/04-image-recognition test` |
-| Module 2 — Support chatbot | [`labs/05-support-chatbot`](labs/05-support-chatbot) | `./mvnw -pl labs/05-support-chatbot verify` |
-| Module 2 — Recommendation system | [`labs/06-recommendation-system`](labs/06-recommendation-system) | `./mvnw -pl labs/06-recommendation-system test` |
-| Module 2 — Response template generator | [`labs/07-response-generator`](labs/07-response-generator) | `./mvnw -pl labs/07-response-generator verify` |
+| Seven course labs | [`labs/`](labs) | `./mvnw.cmd verify` |
+| Final Project Part A | [`final-project/part-a-feedback-analyzer`](final-project/part-a-feedback-analyzer) | `./mvnw.cmd -pl final-project/part-a-feedback-analyzer verify` |
+| Flagship Spring Boot app | [`customer-support-platform`](customer-support-platform) | `./mvnw.cmd -pl customer-support-platform verify` |
+| Architecture | [`docs/architecture.md`](docs/architecture.md) | review Mermaid diagrams |
+| Course evidence map | [`docs/coursera-lab-mapping.md`](docs/coursera-lab-mapping.md) | repository paths + tests |
 
-See [`docs/coursera-lab-mapping.md`](docs/coursera-lab-mapping.md) for the evidence map and scope boundaries.
-
-## Requirements
-
-- Java 21+
-- Maven Wrapper (no global Maven install required)
-
-Run every current module with:
+## Provider and test notes
 
 ```powershell
 ./mvnw.cmd --batch-mode --no-transfer-progress verify
 ```
 
-The implementations are original portfolio work, not copied course answer files. Course references are acknowledged for learning context; repository tests and source are the evidence for what is implemented here.
+The local verification includes unit tests, Spring context tests, MVC workflow tests, and a Testcontainers integration test. On this workstation Docker is not installed, so the PostgreSQL container test is intentionally skipped locally; GitHub Actions runs it on a Docker-capable runner. See `.github/workflows/ci.yml`.
 
-## Provider safety
+## Course attribution and license
 
-Spring labs default to a deterministic `demo` provider. To use Gemini locally, activate the `gemini` profile and provide `GEMINI_API_KEY` through the environment; no key, prompt, or provider response belongs in Git.
+The seven lab folders and Final Project Part A are original implementations of the learning objectives from Coursera's *Generative AI for Java and Spring Development*. The mapping document records repository evidence and does not claim Coursera grading or submission state. Original work is licensed under Apache 2.0; course and framework names remain their respective owners' trademarks.

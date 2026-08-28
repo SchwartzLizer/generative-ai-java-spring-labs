@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-support}
+      POSTGRES_USER: ${POSTGRES_USER:-support}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-development-password}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - support-postgres:/var/lib/postgresql/data
+  app:
+    build:
+      context: .
+      dockerfile: customer-support-platform/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-support}
+      DB_USERNAME: ${POSTGRES_USER:-support}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-local-development-password}
+      AI_PROVIDER: ${AI_PROVIDER:-demo}
+      APP_AGENT_USERNAME: ${APP_AGENT_USERNAME:-agent}
+      APP_AGENT_PASSWORD: ${APP_AGENT_PASSWORD:-agent-local-password}
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:-admin}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-admin-local-password}
+
+volumes:
+  support-postgres:

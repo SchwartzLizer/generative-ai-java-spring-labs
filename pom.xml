@@ -17,6 +17,8 @@
         <module>labs/05-support-chatbot</module>
         <module>labs/06-recommendation-system</module>
         <module>labs/07-response-generator</module>
+        <module>final-project/part-a-feedback-analyzer</module>
+        <module>customer-support-platform</module>
     </modules>
 
     <properties>
@@ -28,6 +30,8 @@
         <opencsv.version>5.12.0</opencsv.version>
         <spring-boot.version>4.1.1</spring-boot.version>
         <spring-ai.version>2.0.1</spring-ai.version>
+        <springdoc.version>3.1.0</springdoc.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
     </properties>
 
     <dependencyManagement>

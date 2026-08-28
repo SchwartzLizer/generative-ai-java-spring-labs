@@ -1,0 +1,5 @@
+spring:
+  config.activate.on-profile: container
+  jpa.hibernate.ddl-auto: validate
+  flyway.enabled: true
+  ai.model.chat: none
