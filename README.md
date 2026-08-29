@@ -1,27 +1,47 @@
-# Generative AI Java & Spring Portfolio
+# Generative AI with Java and Spring Boot
 
-`customer-support-platform` is a modular-monolith portfolio app for support agents: it stores synthetic customer feedback, runs auditable sentiment/category/urgency analysis, drafts safe responses, and exposes both a REST API and a server-rendered dashboard. The default AI provider is deterministic, so the repository is runnable without credentials.
+This Maven monorepo contains seven Coursera labs, Final Project Part A, and a larger Spring Boot application named `customer-support-platform`.
+
+The main application is a modular monolith for customer support teams. It stores synthetic feedback, analyzes sentiment, category, and urgency, then drafts safe responses for an agent to review. It has a REST API and a server-rendered dashboard. The default `demo` provider uses deterministic rules, so you can run the project without an API key.
 
 [![CI](https://github.com/SchwartzLizer/generative-ai-java-spring-labs/actions/workflows/ci.yml/badge.svg)](https://github.com/SchwartzLizer/generative-ai-java-spring-labs/actions/workflows/ci.yml)
 
-## Five-minute reviewer path
+## Run the application
 
-1. Read [`docs/architecture.md`](docs/architecture.md) for the request flow and boundaries.
-2. Run the full build: `./mvnw.cmd --batch-mode --no-transfer-progress verify`.
-3. Start PostgreSQL and the app with `copy .env.example .env; docker compose up --build`.
-4. Open `http://localhost:8080/dashboard` with the credentials in your local `.env`.
-5. Try the synthetic API flow below, then inspect `/swagger-ui.html`.
+You need Java 21 or newer, Docker Desktop, and the Maven Wrapper included in this repository.
 
-## Flagship features
+```powershell
+copy .env.example .env
+docker compose up --build
+```
 
-- Validated, paginated feedback API with UUID resources and structured errors.
-- Append-only AI analyses and response drafts; approve/reject decisions are immutable.
-- Deterministic `demo` provider for offline evaluation and optional Spring AI Gemini adapter.
-- PostgreSQL + Flyway persistence, optimistic locking, health probes, OpenAPI, and correlation IDs.
-- Role-based security: `AGENT` workflow access and `ADMIN` operational access.
-- Thymeleaf dashboard with summary cards, queue filtering, analysis history, and draft history.
+Open `http://localhost:8080/dashboard` and sign in with the credentials from your local `.env` file.
 
-Dashboard screenshots are produced from the manual GitHub Actions workflow (`dashboard-screenshot.yml`) after a Docker-capable run; no unverified mockups are committed.
+The `demo` provider is active by default. To use Gemini, set `AI_PROVIDER=gemini` and add `GEMINI_API_KEY` to the untracked `.env` file. Keys and prompts are not committed or logged. Provider responses are not logged.
+
+## Review the project in five minutes
+
+1. Read [`docs/architecture.md`](docs/architecture.md) for the request flow and module boundaries.
+2. Run all tests with `./mvnw.cmd --batch-mode --no-transfer-progress verify`.
+3. Start the application with `copy .env.example .env; docker compose up --build`.
+4. Open `http://localhost:8080/dashboard` and use the credentials from `.env`.
+5. Run the synthetic API example below, then open `/swagger-ui.html`.
+
+## What the Spring Boot application covers
+
+| Area | Implementation |
+| --- | --- |
+| Feedback API | Validated and paginated endpoints, UUID resources, and structured errors |
+| AI workflow | Auditable sentiment, category, and urgency analysis, plus response drafts that agents can approve or reject |
+| Providers | Deterministic `demo` provider for offline use and an optional Spring AI Gemini adapter |
+| Persistence | PostgreSQL, Flyway migrations, append-only analysis and draft history, and optimistic locking |
+| Security | `AGENT` access for support workflows and `ADMIN` access for operational endpoints |
+| Web interface | Thymeleaf dashboard with summary cards, queue filters, analysis history, and draft history |
+| Operations | Health probes, OpenAPI documentation, and correlation IDs |
+
+Approve and reject decisions are final. The application keeps previous analyses and response drafts instead of overwriting them.
+
+Dashboard screenshots come from the manual GitHub Actions workflow in `dashboard-screenshot.yml` after a Docker-capable run. The repository does not include unverified mockups.
 
 ## Architecture
 
@@ -39,18 +59,9 @@ flowchart LR
 
 See [`docs/architecture.md`](docs/architecture.md) for package ownership, lifecycle transitions, security, and persistence details.
 
-## Quick start
+## Try the API
 
-Requirements: Java 21+, Docker Desktop, and the committed Maven Wrapper.
-
-```powershell
-copy .env.example .env
-docker compose up --build
-```
-
-The demo provider is active by default. For Gemini, set `AI_PROVIDER=gemini` and `GEMINI_API_KEY` in your untracked `.env` file. Keys and prompts are never committed or logged.
-
-## Synthetic API example
+The following PowerShell example creates synthetic feedback, runs an analysis, and generates a response draft.
 
 ```powershell
 $credential = New-Object PSCredential("agent", (ConvertTo-SecureString "agent-local-password" -AsPlainText -Force))
@@ -62,24 +73,26 @@ Invoke-RestMethod -Authentication Basic -Credential $credential -Method Post -Ur
 
 API contract: `POST/GET /api/v1/feedback`, `POST /api/v1/feedback/{id}/analyses`, `POST /api/v1/feedback/{id}/response-drafts`, `PATCH /api/v1/response-drafts/{id}/decision`, `GET /api/v1/dashboard/summary`.
 
-## Repository map
+## Repository layout
 
-| Area | Path | Evidence command |
+| Area | Path | How to verify it |
 | --- | --- | --- |
 | Seven course labs | [`labs/`](labs) | `./mvnw.cmd verify` |
 | Final Project Part A | [`final-project/part-a-feedback-analyzer`](final-project/part-a-feedback-analyzer) | `./mvnw.cmd -pl final-project/part-a-feedback-analyzer verify` |
-| Flagship Spring Boot app | [`customer-support-platform`](customer-support-platform) | `./mvnw.cmd -pl customer-support-platform verify` |
-| Architecture | [`docs/architecture.md`](docs/architecture.md) | review Mermaid diagrams |
-| Course evidence map | [`docs/coursera-lab-mapping.md`](docs/coursera-lab-mapping.md) | repository paths + tests |
+| Spring Boot application | [`customer-support-platform`](customer-support-platform) | `./mvnw.cmd -pl customer-support-platform verify` |
+| Architecture notes | [`docs/architecture.md`](docs/architecture.md) | Review the Mermaid diagrams |
+| Course evidence map | [`docs/coursera-lab-mapping.md`](docs/coursera-lab-mapping.md) | Review the linked repository paths and tests |
 
-## Provider and test notes
+## Testing
 
 ```powershell
 ./mvnw.cmd --batch-mode --no-transfer-progress verify
 ```
 
-The local verification includes unit tests, Spring context tests, MVC workflow tests, and a Testcontainers integration test. On this workstation Docker is not installed, so the PostgreSQL container test is intentionally skipped locally; GitHub Actions runs it on a Docker-capable runner. See `.github/workflows/ci.yml`.
+This command runs unit tests, Spring context tests, MVC workflow tests, and a PostgreSQL integration test. Testcontainers starts PostgreSQL when Docker is available. GitHub Actions runs the full verification on a Docker-capable runner and also builds the application image. See `.github/workflows/ci.yml`.
 
 ## Course attribution and license
 
-The seven lab folders and Final Project Part A are original implementations of the learning objectives from Coursera's *Generative AI for Java and Spring Development*. The mapping document records repository evidence and does not claim Coursera grading or submission state. Original work is licensed under Apache 2.0; course and framework names remain their respective owners' trademarks.
+The seven lab folders and Final Project Part A are original implementations of learning objectives from Coursera's *Generative AI for Java and Spring Development*. The mapping document links each objective to repository code and tests. It does not claim Coursera grading or submission status.
+
+Original work is licensed under Apache 2.0. Course and framework names remain trademarks of their respective owners.
