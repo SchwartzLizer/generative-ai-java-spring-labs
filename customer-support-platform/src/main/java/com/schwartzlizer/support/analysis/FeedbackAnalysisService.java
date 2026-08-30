@@ -1,6 +1,6 @@
 package com.schwartzlizer.support.analysis;
 
-import com.schwartzlizer.support.ai.AiProviderProperties;
+
 import com.schwartzlizer.support.ai.CustomerSupportAiClient;
 import org.springframework.stereotype.Service;
 
@@ -16,8 +16,6 @@ public class FeedbackAnalysisService {
 
     public FeedbackAnalysisService(FeedbackAnalysisTxOperations txOperations,
                                    CustomerSupportAiClient aiClient,
-                                   AiProviderProperties provider,
-                                   java.util.function.Supplier<UUID> uuidSupplier,
                                    Clock clock) {
         this.txOperations = txOperations;
         this.aiClient = aiClient;

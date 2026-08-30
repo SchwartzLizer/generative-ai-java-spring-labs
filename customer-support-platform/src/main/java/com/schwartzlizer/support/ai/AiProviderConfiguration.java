@@ -23,14 +23,19 @@ public class AiProviderConfiguration {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("GEMINI_API_KEY must be set when AI_PROVIDER=gemini");
         }
-        long millis = properties.timeout().toMillis();
-        if (millis > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("AI timeout is too large");
-        }
+        long millis = validateTimeout(properties.timeout());
         return Client.builder()
             .apiKey(apiKey)
             .httpOptions(HttpOptions.builder().timeout((int) millis).build())
             .build();
+    }
+
+    static long validateTimeout(java.time.Duration timeout) {
+        if (timeout == null || timeout.compareTo(java.time.Duration.ofMillis(1)) < 0
+                || timeout.compareTo(java.time.Duration.ofMillis(Integer.MAX_VALUE)) > 0) {
+            throw new IllegalArgumentException("AI timeout must be between 1ms and Integer.MAX_VALUE ms");
+        }
+        return timeout.toMillis();
     }
 
     @Bean

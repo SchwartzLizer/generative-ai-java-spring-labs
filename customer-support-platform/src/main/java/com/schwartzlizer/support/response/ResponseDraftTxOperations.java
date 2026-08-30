@@ -11,7 +11,6 @@ import com.schwartzlizer.support.common.ResourceNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -23,20 +22,19 @@ public class ResponseDraftTxOperations {
     private final ResponseDraftRepository draftRepository;
     private final AiProviderProperties provider;
     private final Supplier<UUID> uuidSupplier;
-    private final Clock clock;
+
 
     public ResponseDraftTxOperations(FeedbackRepository feedbackRepository,
                                      FeedbackAnalysisRepository analysisRepository,
                                      ResponseDraftRepository draftRepository,
                                      AiProviderProperties provider,
-                                     Supplier<UUID> uuidSupplier,
-                                     Clock clock) {
+                                     Supplier<UUID> uuidSupplier) {
         this.feedbackRepository = feedbackRepository;
         this.analysisRepository = analysisRepository;
         this.draftRepository = draftRepository;
         this.provider = provider;
         this.uuidSupplier = uuidSupplier;
-        this.clock = clock;
+
     }
 
     @Transactional(readOnly = true)
@@ -60,18 +58,4 @@ public class ResponseDraftTxOperations {
         return ResponseDraftResponse.from(draft);
     }
 
-    @Transactional
-    public ResponseDraftResponse decide(UUID draftId, DraftDecision decision, Instant now) {
-        ResponseDraft draft = draftRepository.findById(draftId)
-            .orElseThrow(() -> new ResourceNotFoundException("Response draft was not found"));
-        if (decision == null || decision == DraftDecision.PENDING) {
-            throw new IllegalArgumentException("Decision must be APPROVED or REJECTED");
-        }
-        if (decision == DraftDecision.APPROVED) {
-            draft.approve(now);
-        } else {
-            draft.reject(now);
-        }
-        return ResponseDraftResponse.from(draftRepository.save(draft));
-    }
 }

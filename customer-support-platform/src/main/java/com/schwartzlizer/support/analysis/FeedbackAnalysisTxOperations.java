@@ -9,7 +9,7 @@ import com.schwartzlizer.support.common.ResourceNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
+
 import java.time.Instant;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -20,18 +20,17 @@ public class FeedbackAnalysisTxOperations {
     private final FeedbackAnalysisRepository analysisRepository;
     private final AiProviderProperties provider;
     private final Supplier<UUID> uuidSupplier;
-    private final Clock clock;
+
 
     public FeedbackAnalysisTxOperations(FeedbackRepository feedbackRepository,
                                        FeedbackAnalysisRepository analysisRepository,
                                        AiProviderProperties provider,
-                                       Supplier<UUID> uuidSupplier,
-                                       Clock clock) {
+                                       Supplier<UUID> uuidSupplier) {
         this.feedbackRepository = feedbackRepository;
         this.analysisRepository = analysisRepository;
         this.provider = provider;
         this.uuidSupplier = uuidSupplier;
-        this.clock = clock;
+
     }
 
     @Transactional(readOnly = true)

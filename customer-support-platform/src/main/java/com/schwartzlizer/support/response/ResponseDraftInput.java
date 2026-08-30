@@ -4,5 +4,5 @@ import com.schwartzlizer.support.ai.FeedbackAnalysisResult;
 
 import java.util.UUID;
 
-public record ResponseDraftInput(UUID feedbackId, String message, FeedbackAnalysisResult analysis) {
+record ResponseDraftInput(UUID feedbackId, String message, FeedbackAnalysisResult analysis) {
 }
