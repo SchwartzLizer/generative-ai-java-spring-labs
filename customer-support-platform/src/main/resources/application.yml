@@ -18,6 +18,7 @@ app:
   ai:
     provider: ${AI_PROVIDER:demo}
     model: ${AI_MODEL:demo-rules-v1}
+    timeout: ${AI_TIMEOUT:PT10S}
   security:
     agent-username: ${APP_AGENT_USERNAME:agent}
     agent-password: ${APP_AGENT_PASSWORD:}
