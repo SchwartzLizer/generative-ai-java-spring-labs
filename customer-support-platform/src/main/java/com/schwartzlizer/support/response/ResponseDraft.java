@@ -7,9 +7,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "response_draft", indexes = { @Index(name = "idx_draft_feedback", columnList = "feedback_id"), @Index(name = "idx_draft_decision", columnList = "decision") })
+@Table(name = "response_draft", indexes = { @Index(name = "idx_draft_feedback", columnList = "feedback_id"), @Index(name = "idx_draft_decision", columnList = "decision"), @Index(name = "idx_draft_created_at", columnList = "created_at") })
 public class ResponseDraft {
     @Id private UUID id;
+    @Version private Long version;
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "feedback_id", nullable = false) private Feedback feedback;
     @Column(nullable = false, length = 4000) private String content;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 32) private DraftDecision decision;
@@ -26,5 +27,5 @@ public class ResponseDraft {
     public void approve(Instant at) { decide(DraftDecision.APPROVED, at); }
     public void reject(Instant at) { decide(DraftDecision.REJECTED, at); }
     private void decide(DraftDecision next, Instant at) { if (decision != DraftDecision.PENDING) throw new InvalidStateTransitionException("Draft has already been decided"); if (at == null) throw new IllegalArgumentException("Decision timestamp is required"); decision=next; decidedAt=at; }
-    public UUID id() { return id; } public Feedback feedback() { return feedback; } public String content() { return content; } public DraftDecision decision() { return decision; } public String provider() { return provider; } public String model() { return model; } public Instant createdAt() { return createdAt; } public Instant decidedAt() { return decidedAt; }
+    public UUID id() { return id; } public Long version() { return version; } public Feedback feedback() { return feedback; } public String content() { return content; } public DraftDecision decision() { return decision; } public String provider() { return provider; } public String model() { return model; } public Instant createdAt() { return createdAt; } public Instant decidedAt() { return decidedAt; }
 }
