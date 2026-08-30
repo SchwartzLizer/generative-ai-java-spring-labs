@@ -1,0 +1,57 @@
+package com.schwartzlizer.support.analysis;
+
+import com.schwartzlizer.support.ai.AiProviderProperties;
+import com.schwartzlizer.support.feedback.Feedback;
+import com.schwartzlizer.support.analysis.FeedbackAnalysisRepository;
+import com.schwartzlizer.support.feedback.FeedbackRepository;
+import com.schwartzlizer.support.feedback.FeedbackStatus;
+import com.schwartzlizer.support.common.ResourceNotFoundException;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.UUID;
+import java.util.function.Supplier;
+
+@Component
+public class FeedbackAnalysisTxOperations {
+    private final FeedbackRepository feedbackRepository;
+    private final FeedbackAnalysisRepository analysisRepository;
+    private final AiProviderProperties provider;
+    private final Supplier<UUID> uuidSupplier;
+    private final Clock clock;
+
+    public FeedbackAnalysisTxOperations(FeedbackRepository feedbackRepository,
+                                       FeedbackAnalysisRepository analysisRepository,
+                                       AiProviderProperties provider,
+                                       Supplier<UUID> uuidSupplier,
+                                       Clock clock) {
+        this.feedbackRepository = feedbackRepository;
+        this.analysisRepository = analysisRepository;
+        this.provider = provider;
+        this.uuidSupplier = uuidSupplier;
+        this.clock = clock;
+    }
+
+    @Transactional(readOnly = true)
+    public AnalysisInput load(UUID feedbackId) {
+        Feedback feedback = feedbackRepository.findById(feedbackId)
+            .orElseThrow(() -> new ResourceNotFoundException("Feedback was not found"));
+        return new AnalysisInput(feedback.id(), feedback.message());
+    }
+
+    @Transactional
+    public FeedbackAnalysisResponse persist(UUID feedbackId, com.schwartzlizer.support.ai.FeedbackAnalysisResult result, Instant now) {
+        Feedback feedback = feedbackRepository.findById(feedbackId)
+            .orElseThrow(() -> new ResourceNotFoundException("Feedback was not found"));
+        FeedbackAnalysis analysis = analysisRepository.save(FeedbackAnalysis.create(
+            uuidSupplier.get(), feedback, result.sentiment(), result.category(), result.urgency(),
+            result.recommendedAction(), provider.provider(), provider.model(), now));
+        if (feedback.status() == FeedbackStatus.NEW) {
+            feedback.changeStatus(FeedbackStatus.ANALYZED, now);
+            feedbackRepository.save(feedback);
+        }
+        return FeedbackAnalysisResponse.from(analysis);
+    }
+}
