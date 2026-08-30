@@ -52,6 +52,18 @@ public class ResponseDraftService {
         this.decisionTxOperations = decisionTxOperations;
     }
 
+    public ResponseDraftService(
+        FeedbackRepository feedbackRepository,
+        FeedbackAnalysisRepository analysisRepository,
+        ResponseDraftRepository draftRepository,
+        CustomerSupportAiClient aiClient,
+        AiProviderProperties provider,
+        Supplier<UUID> uuidSupplier,
+        Clock clock
+    ) {
+        this(feedbackRepository, analysisRepository, draftRepository, aiClient, provider, uuidSupplier, clock, null);
+    }
+
     @Transactional
     public ResponseDraftResponse generate(UUID feedbackId) {
         Feedback feedback = feedbackRepository.findById(feedbackId)
