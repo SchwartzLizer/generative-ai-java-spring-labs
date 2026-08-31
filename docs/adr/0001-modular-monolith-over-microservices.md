@@ -17,19 +17,24 @@ it honestly rather than by preference, the coupling between the candidate contex
 was traced through the code and the schema. Three findings decided it.
 
 **1. One seam sits inside a single ACID transaction.**
-`FeedbackAnalysisService.analyze()` is one `@Transactional` method that appends a
-row to `feedback_analysis` **and** transitions the `Feedback` aggregate from `NEW`
-to `ANALYZED`. That transition is guarded by optimistic locking — the `@Version`
+`FeedbackAnalysisService.analyze()` persists the new `feedback_analysis` row **and**
+the `Feedback` transition from `NEW` to `ANALYZED` in one transaction, so the two
+writes commit or roll back together. That transition is guarded by optimistic locking — the `@Version`
 `version` field on `Feedback`, backed by the `version BIGINT` column at
 `customer-support-platform/src/main/resources/db/migration/V1__create_support_tables.sql`
 line 8 — and by the in-aggregate state machine in `Feedback.changeStatus()`, which
 throws `InvalidStateTransitionException` on an illegal move.
 
-Splitting analysis away from intake converts that one method into a saga: a local
+Splitting analysis away from intake converts that single transaction into a saga: a local
 append, then a remote, retriable, idempotent status transition, plus a
 compensating path for the case where the analysis row is already committed and the
 transition is rejected. The consistency guarantee does not disappear; it becomes
 application code that must be designed, tested, and operated.
+
+That distinction is load-bearing. Moving the AI provider call out of the
+transaction took one refactor and no infrastructure. Moving the status transition
+out would take a saga, an outbox, and a new operational failure mode. The cheap fix
+was available for one and not the other, which is what this decision rests on.
 
 **2. The read model touches every context in one transaction.**
 `DashboardService.summary()` issues one count query per

@@ -20,7 +20,7 @@ already satisfied rather than aspirational:
 | Non-root runtime user, uid 10001 | `Dockerfile` lines 7 and 10 | Most managed container platforms reject or flag root containers |
 | Container-aware heap sizing | `Dockerfile` line 12, `MaxRAMPercentage=75` | The JVM respects the container memory limit instead of the host's |
 | Liveness and readiness probes | `application.yml` lines 15–16 | Orchestrators need them to route traffic and restart safely |
-| Configuration entirely from environment | `application.yml` lines 4–6 and 17–25, `compose.yaml` lines 24–32 | No rebuild per environment; secrets stay outside the image |
+| Configuration entirely from environment | `application.yml` lines 4–6 and 17–26, `compose.yaml` lines 24–34 | No rebuild per environment; secrets stay outside the image |
 | Schema migration on startup | Flyway enabled at `application.yml` line 10, with `ddl-auto: validate` at line 8 | Deployments carry their own schema change |
 | `open-in-view: false` | `application.yml` line 9 | Database connections are released before view rendering; protects the pool under load |
 | Correlation ID on every request | `common/CorrelationIdFilter`, returned as `X-Correlation-ID` | The minimum needed to follow one request through aggregated logs |
@@ -139,11 +139,14 @@ lock, but the deployment strategy should still be verified against it rather tha
 assumed.
 
 Likely first bottleneck under load is not the database but the `aiClient.analyze`
-call inside `FeedbackAnalysisService.analyze()`: a synchronous external call
-inside a
-`@Transactional` method holds a database connection for the duration of a network
-round trip. Moving the provider call outside the transaction is the first
-performance change worth making, and it costs nothing in infrastructure.
+call in `FeedbackAnalysisService.analyze()`: a synchronous external call whose
+latency is set by the provider, not by this system. It no longer holds a database
+connection while it waits — the feedback is loaded in one transaction, the provider
+is called with none open, and the result is persisted in a second. That was the
+first performance change worth making, and it cost nothing in infrastructure. The
+call is now wrapped in an `ai.provider.call.duration` timer and bounded by
+`app.ai.timeout` (`AI_TIMEOUT`, default ten seconds), so provider latency is both
+measurable and capped rather than unbounded.
 
 ## Cost drivers
 
@@ -168,12 +171,11 @@ document:
 1. **In-memory users must be replaced** by a real identity provider.
 2. **Session handling must be solved** for the form-login dashboard before running
    more than one instance.
-3. **The AI provider call should move outside the database transaction.**
-4. **Only `health` and `info` are exposed** (`application.yml` line 15) — metrics
+3. **Only `health` and `info` are exposed** (`application.yml` line 15) — metrics
    would need enabling and protecting, since `/actuator/**` is already
    `ADMIN`-only under the request matchers in
    `SecurityConfiguration.securityFilterChain()`.
-5. **Correlation IDs are not distributed tracing.** Adequate for one deployable;
+4. **Correlation IDs are not distributed tracing.** Adequate for one deployable;
    inadequate the moment there is more than one.
-6. **No load testing has been performed.** Every scaling statement above is
+5. **No load testing has been performed.** Every scaling statement above is
    reasoning from the code, not measurement, and is labelled as such.

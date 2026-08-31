@@ -36,9 +36,10 @@ a worse outcome than not splitting.
 
 ## The one hard seam: `FeedbackAnalysisService.analyze()`
 
-`FeedbackAnalysisService.analyze()` is a single `@Transactional` method that
-calls the AI provider, appends a `feedback_analysis` row, and — only when the
-feedback is still `NEW` — transitions it to `ANALYZED` and saves it. The
+`FeedbackAnalysisService.analyze()` loads the feedback, calls the AI provider with
+no transaction open, then appends a `feedback_analysis` row and — only when the
+feedback is still `NEW` — transitions it to `ANALYZED`, both writes in one
+transaction. The
 transition is protected by the aggregate's own state machine in
 `Feedback.changeStatus()` and by the `@Version` `version` field on `Feedback`.
 
@@ -78,8 +79,8 @@ Design rules this implies, all of which are currently free and would stop being
 free:
 
 - **Idempotency.** The analysis id becomes the key; the transition must be safe to
-  replay. Today the `if (feedback.status() == FeedbackStatus.NEW)` guard inside
-  `analyze()` is naturally idempotent within one transaction.
+  replay. Today the `NEW` status check and both writes happen in the same
+  transaction, so the operation is naturally idempotent.
 - **No compensation for the analysis.** History is append-only by design, so a
   failed transition must never delete an analysis. The failure mode is a feedback
   row that stays `NEW` while an analysis exists — which must be detectable and

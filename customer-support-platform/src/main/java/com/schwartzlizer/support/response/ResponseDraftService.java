@@ -1,10 +1,7 @@
 package com.schwartzlizer.support.response;
 
-import com.schwartzlizer.support.ai.AiProviderProperties;
 import com.schwartzlizer.support.ai.CustomerSupportAiClient;
 import com.schwartzlizer.support.ai.ResponseDraftResult;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,8 +12,11 @@ import java.util.UUID;
 /**
  * Generates AI reply drafts for analysed feedback and records the agent's approve or reject decision.
  *
- * <p>A draft can only be generated for feedback that already has at least one analysis. Both {@code generate}
- * and {@code decide} are transactional.
+ * <p>A draft can only be generated for feedback that already has at least one analysis.
+ *
+ * <p>{@code decide} runs in a single transaction. {@code generate} does not: it loads the feedback and its
+ * most recent analysis in one transaction, calls the AI provider with no transaction open, and persists the
+ * draft in a second transaction, so a slow provider does not hold a database transaction open.
  *
  * <p>Decide-once is enforced by {@link ResponseDraft} within a transaction and by its {@code @Version} column
  * across concurrent transactions.
