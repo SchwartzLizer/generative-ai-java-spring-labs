@@ -26,6 +26,8 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-support}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-local-development-password}
       AI_PROVIDER: ${AI_PROVIDER:-demo}
+      SPRING_PROFILES_ACTIVE: ${AI_PROVIDER:-demo}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       APP_AGENT_USERNAME: ${APP_AGENT_USERNAME:-agent}
       APP_AGENT_PASSWORD: ${APP_AGENT_PASSWORD:-agent-local-password}
       APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:-admin}
