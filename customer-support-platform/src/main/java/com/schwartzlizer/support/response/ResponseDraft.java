@@ -17,6 +17,7 @@ public class ResponseDraft {
     @Column(nullable = false, length = 100) private String model;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "decided_at") private Instant decidedAt;
+    @Version private Long version;
     protected ResponseDraft() { }
     private ResponseDraft(UUID id, Feedback feedback, String content, String provider, String model, Instant createdAt) { this.id=id; this.feedback=feedback; this.content=content; this.decision=DraftDecision.PENDING; this.provider=provider; this.model=model; this.createdAt=createdAt; }
     public static ResponseDraft create(UUID id, Feedback feedback, String content, String provider, String model, Instant createdAt) {
@@ -27,4 +28,5 @@ public class ResponseDraft {
     public void reject(Instant at) { decide(DraftDecision.REJECTED, at); }
     private void decide(DraftDecision next, Instant at) { if (decision != DraftDecision.PENDING) throw new InvalidStateTransitionException("Draft has already been decided"); if (at == null) throw new IllegalArgumentException("Decision timestamp is required"); decision=next; decidedAt=at; }
     public UUID id() { return id; } public Feedback feedback() { return feedback; } public String content() { return content; } public DraftDecision decision() { return decision; } public String provider() { return provider; } public String model() { return model; } public Instant createdAt() { return createdAt; } public Instant decidedAt() { return decidedAt; }
+    public Long version() { return version; }
 }
