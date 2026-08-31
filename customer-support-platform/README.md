@@ -1,6 +1,6 @@
 # Customer Support Platform
 
-Portfolio-grade Spring Boot modular monolith for a synthetic support queue.
+Portfolio-grade Spring Boot modular monolith for a synthetic support queue. Four bounded contexts, one deployable — see [ADR-0001](../docs/adr/0001-modular-monolith-over-microservices.md).
 
 ## Run
 
