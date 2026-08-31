@@ -2,6 +2,7 @@ package com.schwartzlizer.support.common;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -32,6 +33,8 @@ public class GlobalExceptionHandler {
     ResponseEntity<ApiError> conflict(InvalidStateTransitionException ex, HttpServletRequest request) { return response(HttpStatus.CONFLICT, "INVALID_STATE_TRANSITION", ex.getMessage(), request, Map.of()); }
     @ExceptionHandler(AnalysisRequiredException.class)
     ResponseEntity<ApiError> analysisRequired(AnalysisRequiredException ex, HttpServletRequest request) { return response(HttpStatus.CONFLICT, "ANALYSIS_REQUIRED", ex.getMessage(), request, Map.of()); }
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ResponseEntity<ApiError> concurrentModification(OptimisticLockingFailureException ex, HttpServletRequest request) { return response(HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION", "The record was changed by another request. Reload it and try again", request, Map.of()); }
     @ExceptionHandler(AiProviderException.class)
     ResponseEntity<ApiError> provider(AiProviderException ex, HttpServletRequest request) { return response(HttpStatus.SERVICE_UNAVAILABLE, "AI_PROVIDER_UNAVAILABLE", "The AI provider is temporarily unavailable", request, Map.of()); }
     private ResponseEntity<ApiError> response(HttpStatus status, String code, String message, HttpServletRequest request, Map<String,String> fields) { return ResponseEntity.status(status).body(new ApiError(code, message, Instant.now(clock), request.getRequestURI(), fields)); }
