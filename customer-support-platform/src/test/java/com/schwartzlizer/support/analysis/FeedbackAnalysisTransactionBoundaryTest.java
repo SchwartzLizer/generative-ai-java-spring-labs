@@ -5,6 +5,7 @@ import com.schwartzlizer.support.ai.FeedbackAnalysisResult;
 import com.schwartzlizer.support.ai.ResponseDraftResult;
 import com.schwartzlizer.support.feedback.Feedback;
 import com.schwartzlizer.support.feedback.FeedbackRepository;
+import com.schwartzlizer.support.response.ResponseDraftService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,6 +32,12 @@ class FeedbackAnalysisTransactionBoundaryTest {
     FeedbackAnalysisService analysisService;
 
     @Autowired
+    ResponseDraftService responseDraftService;
+
+    @Autowired
+    FeedbackAnalysisRepository analysisRepository;
+
+    @Autowired
     AiProbe probe;
 
     @Test
@@ -42,6 +49,23 @@ class FeedbackAnalysisTransactionBoundaryTest {
         analysisService.analyze(feedback.id());
 
         assertThat(probe.transactionActiveWhenCalled()).isFalse();
+    }
+
+    @Test
+    void generatesDraftResponseWithoutAnActiveDatabaseTransaction() {
+        Feedback feedback = feedbackRepository.saveAndFlush(
+            Feedback.create(UUID.randomUUID(), "CUST-TX", "The app crashes", Instant.now())
+        );
+        analysisRepository.saveAndFlush(
+            FeedbackAnalysis.create(
+                UUID.randomUUID(), feedback, Sentiment.NEUTRAL, SupportCategory.GENERAL, Urgency.LOW,
+                "Acknowledge the feedback", "demo", "demo-rules-v1", Instant.now()
+            )
+        );
+
+        responseDraftService.generate(feedback.id());
+
+        assertThat(probe.draftTransactionActiveWhenCalled()).isFalse();
     }
 
     @TestConfiguration(proxyBeanMethods = false)
@@ -68,6 +92,7 @@ class FeedbackAnalysisTransactionBoundaryTest {
 
                 @Override
                 public ResponseDraftResult draftResponse(String message, FeedbackAnalysisResult analysis) {
+                    probe.recordDraftTransactionState();
                     return new ResponseDraftResult("Thanks for sharing this feedback.");
                 }
             };
@@ -76,13 +101,22 @@ class FeedbackAnalysisTransactionBoundaryTest {
 
     static final class AiProbe {
         private boolean transactionActiveWhenCalled;
+        private boolean draftTransactionActiveWhenCalled;
 
         void recordTransactionState() {
             transactionActiveWhenCalled = TransactionSynchronizationManager.isActualTransactionActive();
         }
 
+        void recordDraftTransactionState() {
+            draftTransactionActiveWhenCalled = TransactionSynchronizationManager.isActualTransactionActive();
+        }
+
         boolean transactionActiveWhenCalled() {
             return transactionActiveWhenCalled;
+        }
+
+        boolean draftTransactionActiveWhenCalled() {
+            return draftTransactionActiveWhenCalled;
         }
     }
 }
