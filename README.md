@@ -2,9 +2,13 @@
 
 This Maven monorepo contains seven Coursera labs, Final Project Part A, and a larger Spring Boot application named `customer-support-platform`.
 
-The main application is a modular monolith for customer support teams. It stores synthetic feedback, analyzes sentiment, category, and urgency, then drafts safe responses for an agent to review. It has a REST API and a server-rendered dashboard. The default `demo` provider uses deterministic rules, so you can run the project without an API key.
+The main application is a modular monolith with four explicit bounded contexts — feedback intake, analysis, response drafting, and support operations — kept as one deployable by a recorded decision rather than by default. It stores synthetic feedback, analyzes sentiment, category, and urgency, then drafts safe responses for an agent to review. It has a REST API and a server-rendered dashboard. The default `demo` provider uses deterministic rules, so you can run the project without an API key.
+
+That decision, its costs, and a priced plan for extracting microservices are written down: [ADR-0001](docs/adr/0001-modular-monolith-over-microservices.md), the [context map and ubiquitous language](docs/context-map.md), the [decomposition plan](docs/microservice-decomposition.md), and a provider-neutral [cloud deployment topology](docs/cloud-deployment-topology.md).
 
 [![CI](https://github.com/SchwartzLizer/generative-ai-java-spring-labs/actions/workflows/ci.yml/badge.svg)](https://github.com/SchwartzLizer/generative-ai-java-spring-labs/actions/workflows/ci.yml)
+
+Course credentials: Coursera *Generative AI for Java and Spring Development* — all graded assessments complete, Final Exam graded at 100%. It's one of 14 courses in the [IBM Java Developer Professional Certificate](https://www.coursera.org/account/accomplishments/specialization/0YH77MIPTE6T), completed 2026-08-28, which also includes coursework in Cloud Native, Microservices, Containers, DevOps and Agile.
 
 ## Run the application
 
@@ -21,7 +25,7 @@ The `demo` provider is active by default. To use Gemini, set `AI_PROVIDER=gemini
 
 ## Review the project in five minutes
 
-1. Read [`docs/architecture.md`](docs/architecture.md) for the request flow and module boundaries.
+1. Read [`docs/architecture.md`](docs/architecture.md) for the request flow, then [ADR-0001](docs/adr/0001-modular-monolith-over-microservices.md) for why this is one deployable and what a microservice split would cost.
 2. Run all tests with `./mvnw.cmd --batch-mode --no-transfer-progress verify`.
 3. Start the application with `copy .env.example .env; docker compose up --build`.
 4. Open `http://localhost:8080/dashboard` and use the credentials from `.env`.
@@ -34,7 +38,7 @@ The `demo` provider is active by default. To use Gemini, set `AI_PROVIDER=gemini
 | Feedback API | Validated and paginated endpoints, UUID resources, and structured errors |
 | AI workflow | Auditable sentiment, category, and urgency analysis, plus response drafts that agents can approve or reject |
 | Providers | Deterministic `demo` provider for offline use and an optional Spring AI Gemini adapter |
-| Persistence | PostgreSQL, Flyway migrations, append-only analysis and draft history, and optimistic locking |
+| Persistence | PostgreSQL, Flyway migrations, append-only analysis and draft history, and `@Version` optimistic locking on feedback and response draft rows |
 | Security | `AGENT` access for support workflows and `ADMIN` access for operational endpoints |
 | Web interface | Thymeleaf dashboard with summary cards, queue filters, analysis history, and draft history |
 | Operations | Health probes, OpenAPI documentation, and correlation IDs |
@@ -57,7 +61,7 @@ flowchart LR
   Port -. optional .-> Gemini[Spring AI Gemini]
 ```
 
-See [`docs/architecture.md`](docs/architecture.md) for package ownership, lifecycle transitions, security, and persistence details.
+See [`docs/architecture.md`](docs/architecture.md) for package ownership, lifecycle transitions, security, and persistence details, and [`docs/context-map.md`](docs/context-map.md) for the bounded contexts, their relationship types, and the boundary violations that currently exist.
 
 ## Try the API
 
@@ -81,6 +85,10 @@ API contract: `POST/GET /api/v1/feedback`, `POST /api/v1/feedback/{id}/analyses`
 | Final Project Part A | [`final-project/part-a-feedback-analyzer`](final-project/part-a-feedback-analyzer) | `./mvnw.cmd -pl final-project/part-a-feedback-analyzer verify` |
 | Spring Boot application | [`customer-support-platform`](customer-support-platform) | `./mvnw.cmd -pl customer-support-platform verify` |
 | Architecture notes | [`docs/architecture.md`](docs/architecture.md) | Review the Mermaid diagrams |
+| Architecture decisions | [`docs/adr/`](docs/adr) | Read ADR-0001 |
+| Domain model and contexts | [`docs/context-map.md`](docs/context-map.md) | Compare the glossary against the package names |
+| Microservice extraction plan | [`docs/microservice-decomposition.md`](docs/microservice-decomposition.md) | Review the seam table and the saga diagram |
+| Cloud topology | [`docs/cloud-deployment-topology.md`](docs/cloud-deployment-topology.md) | Provider-neutral component map |
 | Course evidence map | [`docs/coursera-lab-mapping.md`](docs/coursera-lab-mapping.md) | Review the linked repository paths and tests |
 
 ## Testing
@@ -93,6 +101,8 @@ This command runs unit tests, Spring context tests, MVC workflow tests, and a Po
 
 ## Course attribution and license
 
-The seven lab folders and Final Project Part A are original implementations of learning objectives from Coursera's *Generative AI for Java and Spring Development*. The mapping document links each objective to repository code and tests. It does not claim Coursera grading or submission status.
+The seven lab folders and Final Project Part A are original implementations of learning objectives from Coursera's *Generative AI for Java and Spring Development* — they are not the lab artifacts submitted to Coursera. The mapping document links each objective to repository code and tests.
+
+The course itself is complete: all three modules show every graded assessment finished, and the Final Exam was submitted and graded at 100%. It is one of the 14 courses in the [IBM Java Developer Professional Certificate](https://www.coursera.org/account/accomplishments/specialization/0YH77MIPTE6T), completed 2026-08-28. The same series includes completed coursework in *Spring Framework for Java Development*, *Java Development with Databases*, *Cloud Native, Microservices, Containers, DevOps and Agile*, and *Java: Design Patterns, Testing, and Deployment*.
 
 Original work is licensed under Apache 2.0. Course and framework names remain trademarks of their respective owners.

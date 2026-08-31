@@ -38,6 +38,8 @@ sequenceDiagram
 
 ## Package ownership
 
+Packages are named by technical concern. Their domain meaning, the relationships between them, and the boundary violations that currently exist are in [`context-map.md`](context-map.md).
+
 | Package | Responsibility |
 | --- | --- |
 | `feedback` | Feedback entity, lifecycle, validation DTOs, repository, REST and page controllers |
@@ -57,3 +59,7 @@ Feedback transitions are `NEW -> ANALYZED|IN_PROGRESS`, `ANALYZED -> IN_PROGRESS
 `CustomerSupportAiClient` keeps domain services independent from transport. The demo provider is deterministic and active by default. The Gemini adapter parses a strict JSON analysis contract and uses bounded prompts that prohibit invented refunds, dates, account actions, or policy claims. Provider errors become structured `503` responses without deleting feedback.
 
 `/api/**` uses HTTP Basic and `/dashboard` uses form login. `AGENT` and `ADMIN` can run support workflows; only `ADMIN` can read non-health Actuator information. Liveness/readiness are public. Correlation IDs are returned in `X-Correlation-ID` and placed in MDC only for the request duration. Request bodies, credentials, prompts, and provider responses are not logged.
+
+## Related decisions
+
+Why this is one deployable, and what splitting it would cost: [ADR-0001](adr/0001-modular-monolith-over-microservices.md) and [`microservice-decomposition.md`](microservice-decomposition.md).
