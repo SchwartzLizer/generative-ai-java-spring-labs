@@ -9,7 +9,8 @@ public final class LexiconFeedbackSentimentAnalyzer implements FeedbackSentiment
     private static final Set<String> NEGATIVE = Set.of("broken", "late", "difficult", "unhelpful", "error", "frustrated");
     private static final Set<String> NEGATORS = Set.of("not", "never", "no");
 
-    @Override public Sentiment analyze(String message) {
+    @Override
+    public Sentiment analyze(String message) {
         if (message == null || message.isBlank()) return Sentiment.NEUTRAL;
         int score = 0;
         String previous = "";
