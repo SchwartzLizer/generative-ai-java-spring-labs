@@ -27,18 +27,30 @@ import java.util.UUID;
     @Index(name = "idx_feedback_created_at", columnList = "created_at")
 })
 public class Feedback {
-    @Id private UUID id;
-    @Column(name = "customer_reference", nullable = false, length = 100) private String customerReference;
-    @Column(nullable = false, length = 4000) private String message;
-    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 32) private FeedbackStatus status;
-    @Column(name = "created_at", nullable = false) private Instant createdAt;
-    @Column(name = "updated_at", nullable = false) private Instant updatedAt;
-    @Version private Long version;
+    @Id
+    private UUID id;
+    @Column(name = "customer_reference", nullable = false, length = 100)
+    private String customerReference;
+    @Column(nullable = false, length = 4000)
+    private String message;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private FeedbackStatus status;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+    @Version
+    private Long version;
 
     protected Feedback() { }
     private Feedback(UUID id, String customerReference, String message, Instant createdAt) {
-        this.id = id; this.customerReference = customerReference; this.message = message;
-        this.status = FeedbackStatus.NEW; this.createdAt = createdAt; this.updatedAt = createdAt;
+        this.id = id;
+        this.customerReference = customerReference;
+        this.message = message;
+        this.status = FeedbackStatus.NEW;
+        this.createdAt = createdAt;
+        this.updatedAt = createdAt;
     }
     /**
      * Creates a new feedback item in status {@code NEW}.
@@ -87,7 +99,8 @@ public class Feedback {
             case CLOSED -> EnumSet.noneOf(FeedbackStatus.class);
         };
         if (!allowed.contains(next)) throw new InvalidStateTransitionException("Cannot change feedback status from " + status + " to " + next);
-        status = next; updatedAt = changedAt;
+        status = next;
+        updatedAt = changedAt;
     }
     public UUID id() { return id; }
     public String customerReference() { return customerReference; }

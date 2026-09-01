@@ -29,5 +29,9 @@ public class FeedbackAnalysisController {
      * @throws com.schwartzlizer.support.common.AiProviderException if the AI provider is unavailable or returns
      *         an unusable payload; surfaces as HTTP 503
      */
-    @PostMapping public ResponseEntity<FeedbackAnalysisResponse> analyze(@PathVariable("feedbackId") UUID feedbackId) { FeedbackAnalysisResponse response=service.analyze(feedbackId); return ResponseEntity.created(URI.create("/api/v1/feedback/"+feedbackId+"/analyses/"+response.id())).body(response); }
+    @PostMapping
+    public ResponseEntity<FeedbackAnalysisResponse> analyze(@PathVariable("feedbackId") UUID feedbackId) {
+        FeedbackAnalysisResponse response=service.analyze(feedbackId);
+        return ResponseEntity.created(URI.create("/api/v1/feedback/"+feedbackId+"/analyses/"+response.id())).body(response);
+    }
 }

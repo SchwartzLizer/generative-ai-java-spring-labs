@@ -26,8 +26,19 @@ import java.util.function.Supplier;
  */
 @Service
 public class FeedbackService {
-    private final FeedbackRepository feedbackRepository; private final FeedbackAnalysisRepository analysisRepository; private final ResponseDraftRepository draftRepository; private final Supplier<UUID> uuidSupplier; private final Clock clock;
-    @Autowired public FeedbackService(FeedbackRepository feedbackRepository, FeedbackAnalysisRepository analysisRepository, ResponseDraftRepository draftRepository, Supplier<UUID> uuidSupplier, Clock clock) { this.feedbackRepository=feedbackRepository; this.analysisRepository=analysisRepository; this.draftRepository=draftRepository; this.uuidSupplier=uuidSupplier; this.clock=clock; }
+    private final FeedbackRepository feedbackRepository;
+    private final FeedbackAnalysisRepository analysisRepository;
+    private final ResponseDraftRepository draftRepository;
+    private final Supplier<UUID> uuidSupplier;
+    private final Clock clock;
+    @Autowired
+    public FeedbackService(FeedbackRepository feedbackRepository, FeedbackAnalysisRepository analysisRepository, ResponseDraftRepository draftRepository, Supplier<UUID> uuidSupplier, Clock clock) {
+        this.feedbackRepository=feedbackRepository;
+        this.analysisRepository=analysisRepository;
+        this.draftRepository=draftRepository;
+        this.uuidSupplier=uuidSupplier;
+        this.clock=clock;
+    }
     /**
      * Creates a service limited to feedback storage, without analysis or draft access.
      *
@@ -48,7 +59,11 @@ public class FeedbackService {
      * @throws IllegalArgumentException if the request fields fail the {@code Feedback.create} invariants (null
      *         or blank); surfaces as HTTP 400
      */
-    @Transactional public FeedbackResponse submit(SubmitFeedbackRequest request) { Feedback saved=feedbackRepository.save(Feedback.create(uuidSupplier.get(), request.customerReference(), request.message(), Instant.now(clock))); return FeedbackResponse.basic(saved); }
+    @Transactional
+    public FeedbackResponse submit(SubmitFeedbackRequest request) {
+        Feedback saved=feedbackRepository.save(Feedback.create(uuidSupplier.get(), request.customerReference(), request.message(), Instant.now(clock)));
+        return FeedbackResponse.basic(saved);
+    }
     /**
      * Returns a page of feedback items, newest first.
      *
@@ -58,7 +73,8 @@ public class FeedbackService {
      * @param pageable page number and size; the sort attribute has no effect
      * @return the requested page of basic feedback views
      */
-    @Transactional(readOnly=true) public Page<FeedbackResponse> list(Pageable pageable) { return feedbackRepository.findAllByOrderByCreatedAtDesc(pageable).map(FeedbackResponse::basic); }
+    @Transactional(readOnly=true)
+    public Page<FeedbackResponse> list(Pageable pageable) { return feedbackRepository.findAllByOrderByCreatedAtDesc(pageable).map(FeedbackResponse::basic); }
     /**
      * Returns a page of feedback items filtered by customer reference, newest first.
      *
@@ -70,7 +86,8 @@ public class FeedbackService {
      * @param pageable page number and size; the sort attribute has no effect
      * @return the matching page of basic feedback views
      */
-    @Transactional(readOnly=true) public Page<FeedbackResponse> list(String query, Pageable pageable) { return (query == null || query.isBlank() ? feedbackRepository.findAllByOrderByCreatedAtDesc(pageable) : feedbackRepository.findByCustomerReferenceContainingIgnoreCaseOrderByCreatedAtDesc(query.trim(), pageable)).map(FeedbackResponse::basic); }
+    @Transactional(readOnly=true)
+    public Page<FeedbackResponse> list(String query, Pageable pageable) { return (query == null || query.isBlank() ? feedbackRepository.findAllByOrderByCreatedAtDesc(pageable) : feedbackRepository.findByCustomerReferenceContainingIgnoreCaseOrderByCreatedAtDesc(query.trim(), pageable)).map(FeedbackResponse::basic); }
     /**
      * Returns one feedback item together with its full analysis and draft history.
      *
@@ -81,7 +98,13 @@ public class FeedbackService {
      * @return the detailed view
      * @throws ResourceNotFoundException if no feedback exists with that id; surfaces as HTTP 404
      */
-    @Transactional(readOnly=true) public FeedbackResponse get(UUID id) { Feedback feedback=find(id); var analyses=analysisRepository == null ? java.util.List.<com.schwartzlizer.support.analysis.FeedbackAnalysisResponse>of() : analysisRepository.findByFeedback_IdOrderByCreatedAtAsc(id).stream().map(com.schwartzlizer.support.analysis.FeedbackAnalysisResponse::from).toList(); var drafts=draftRepository == null ? java.util.List.<com.schwartzlizer.support.response.ResponseDraftResponse>of() : draftRepository.findByFeedback_IdOrderByCreatedAtAsc(id).stream().map(com.schwartzlizer.support.response.ResponseDraftResponse::from).toList(); return new FeedbackResponse(feedback.id(),feedback.customerReference(),feedback.message(),feedback.status(),feedback.createdAt(),feedback.updatedAt(),analyses,drafts); }
+    @Transactional(readOnly=true)
+    public FeedbackResponse get(UUID id) {
+        Feedback feedback=find(id);
+        var analyses=analysisRepository == null ? java.util.List.<com.schwartzlizer.support.analysis.FeedbackAnalysisResponse>of() : analysisRepository.findByFeedback_IdOrderByCreatedAtAsc(id).stream().map(com.schwartzlizer.support.analysis.FeedbackAnalysisResponse::from).toList();
+        var drafts=draftRepository == null ? java.util.List.<com.schwartzlizer.support.response.ResponseDraftResponse>of() : draftRepository.findByFeedback_IdOrderByCreatedAtAsc(id).stream().map(com.schwartzlizer.support.response.ResponseDraftResponse::from).toList();
+        return new FeedbackResponse(feedback.id(),feedback.customerReference(),feedback.message(),feedback.status(),feedback.createdAt(),feedback.updatedAt(),analyses,drafts);
+    }
     /**
      * Applies an agent-requested status transition to one feedback item.
      *
@@ -95,7 +118,12 @@ public class FeedbackService {
      * @throws com.schwartzlizer.support.common.InvalidStateTransitionException if the transition is not
      *         permitted from the current status; surfaces as HTTP 409
      */
-    @Transactional public FeedbackResponse changeStatus(UUID id, FeedbackStatus status) { Feedback feedback=find(id); feedback.changeStatus(status, Instant.now(clock)); return FeedbackResponse.basic(feedbackRepository.save(feedback)); }
+    @Transactional
+    public FeedbackResponse changeStatus(UUID id, FeedbackStatus status) {
+        Feedback feedback=find(id);
+        feedback.changeStatus(status, Instant.now(clock));
+        return FeedbackResponse.basic(feedbackRepository.save(feedback));
+    }
     /**
      * Loads the feedback aggregate for use by callers inside an existing transaction.
      *

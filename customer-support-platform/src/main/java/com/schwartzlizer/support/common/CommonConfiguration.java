@@ -8,6 +8,8 @@ import java.util.function.Supplier;
 
 @Configuration
 public class CommonConfiguration {
-    @Bean Clock applicationClock() { return Clock.systemUTC(); }
-    @Bean Supplier<UUID> uuidSupplier() { return UUID::randomUUID; }
+    @Bean
+    Clock applicationClock() { return Clock.systemUTC(); }
+    @Bean
+    Supplier<UUID> uuidSupplier() { return UUID::randomUUID; }
 }
