@@ -1,0 +1,26 @@
+# Line-ending policy for this repository.
+#
+# The repository index already stores everything as LF (confirmed with
+# `git ls-files --eol`), but with no .gitattributes present, Windows clones
+# with the (default) core.autocrlf=true converted every checked-out file to
+# CRLF, including mvnw. Docker reads the working tree, not the index, so the
+# build container looked for `/bin/sh\r` and failed with `./mvnw: not found`.
+# These rules make checkout behavior explicit and platform-independent.
+
+# Auto-detect text files and normalize their line endings in the repository;
+# let Git convert to the platform's native ending on checkout otherwise
+# (respects core.autocrlf). Covers Java, Markdown, XML, YAML, SQL, CSV,
+# HTML/CSS and other plain-text/config files with no interpreter-path
+# sensitivity, so no per-extension override is needed for them.
+* text=auto
+
+# Shell scripts and the Maven wrapper are executed by a POSIX shell (locally
+# and inside the Linux Docker build context via `sh ./mvnw`), so they must
+# always be checked out with LF, regardless of host OS.
+*.sh text eol=lf
+mvnw text eol=lf
+
+# Windows batch/cmd scripts are only ever run by cmd.exe, which expects
+# CRLF, so they must always be checked out with CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
