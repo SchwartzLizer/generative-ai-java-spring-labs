@@ -36,13 +36,11 @@ check_repo_root() {
 # responds fine even when the Docker Desktop daemon is not running, so
 # '--version' would report success right before 'docker compose' fails.
 check_docker() {
-  local docker_output
-  if ! docker_output="$(docker info 2>&1)"; then
+  if ! docker info >/dev/null 2>&1; then
     echo "Error: Docker Desktop does not appear to be running." >&2
     echo "Start Docker Desktop, wait for it to finish starting, and run this script again." >&2
     echo "" >&2
-    echo "Underlying error from 'docker info':" >&2
-    echo "$docker_output" >&2
+    echo "For details, run 'docker info' yourself." >&2
     exit 1
   fi
 }

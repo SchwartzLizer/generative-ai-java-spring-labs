@@ -14,9 +14,13 @@ Course credentials: Coursera *Generative AI for Java and Spring Development* —
 
 You need Java 21 or newer, Docker Desktop, and the Maven Wrapper included in this repository.
 
-```powershell
+On macOS, Linux, or Git Bash/WSL on Windows:
+
+```bash
 ./start.sh
 ```
+
+On Windows, from Command Prompt or PowerShell:
 
 ```cmd
 start.bat

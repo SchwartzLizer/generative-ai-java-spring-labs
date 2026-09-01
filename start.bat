@@ -90,18 +90,14 @@ REM responds fine even when the Docker Desktop daemon is not running, so
 REM '--version' would report success right before 'docker compose' fails.
 REM Invoked as docker.exe for the same reason as the compose call below.
 :check_docker
-set "DOCKER_INFO_LOG=%TEMP%\start-bat-docker-info.txt"
-docker.exe info >"%DOCKER_INFO_LOG%" 2>&1
+docker.exe info >nul 2>&1
 if errorlevel 1 (
   echo Error: Docker Desktop does not appear to be running. 1>&2
   echo Start Docker Desktop, wait for it to finish starting, and run this script again. 1>&2
   echo. 1>&2
-  echo Underlying error from 'docker info': 1>&2
-  type "%DOCKER_INFO_LOG%" 1>&2
-  del "%DOCKER_INFO_LOG%" >nul 2>&1
+  echo For details, run 'docker info' yourself. 1>&2
   exit /b 1
 )
-del "%DOCKER_INFO_LOG%" >nul 2>&1
 exit /b 0
 
 :ensure_env_file
