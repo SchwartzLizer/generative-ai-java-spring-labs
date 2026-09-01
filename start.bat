@@ -12,14 +12,8 @@ cd /d "%~dp0"
 
 set "COMMAND=%~1"
 
-if "%COMMAND%"=="" (
-  call :run_app
-  exit /b %errorlevel%
-)
-if "%COMMAND%"=="test" (
-  call :run_test
-  exit /b %errorlevel%
-)
+if "%COMMAND%"=="" goto :dispatch_run
+if "%COMMAND%"=="test" goto :dispatch_test
 if "%COMMAND%"=="help" (
   call :print_usage
   exit /b 0
@@ -29,6 +23,23 @@ echo Unknown command: %COMMAND% 1>&2
 echo. 1>&2
 call :print_usage 1>&2
 exit /b 1
+
+REM The no-argument and "test" branches above jump here with goto instead of
+REM calling :run_app / :run_test from inside an if (...) block, because
+REM %errorlevel% inside a parenthesised block is substituted once when the
+REM block is parsed, before anything inside it runs. "exit /b %errorlevel%"
+REM written directly inside such a block would therefore always report the
+REM value from before the CALL, not the CALL's actual result -- the script
+REM would print the right error text but always exit 0. Outside a block,
+REM cmd.exe parses and executes one line at a time, so %errorlevel% on its
+REM own line below correctly reflects the CALL that just ran.
+:dispatch_run
+call :run_app
+exit /b %errorlevel%
+
+:dispatch_test
+call :run_test
+exit /b %errorlevel%
 
 REM run_app and run_test are called (not jumped to) so that this script
 REM always exits from the single line above, rather than relying on each
