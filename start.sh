@@ -51,6 +51,58 @@ check_docker() {
   fi
 }
 
+# Java is required for the 'test' path only ('./mvnw verify' runs the build
+# on the host); the run path never needs it, since Docker Compose builds
+# inside containers. Apache Maven's own launcher script -- 'bin/mvn' inside
+# the distribution mvnw downloads -- resolves the JVM the same way on both
+# platforms: JAVA_HOME when it is set, otherwise 'java' on PATH. This check
+# follows that same order so it reports on the JVM that will actually run
+# the build.
+#
+# 'java -version' output changed shape at Java 9: modern JDKs report a bare
+# major version ("21.0.12"), while Java 8 and earlier report "1.8.0_412".
+# Both shapes are parsed below so an old JDK is not misread as a new one.
+# The output itself goes to stderr and is never echoed, only the number
+# parsed out of it.
+check_java() {
+  local java_cmd
+  if [ -n "${JAVA_HOME:-}" ]; then
+    java_cmd="$JAVA_HOME/bin/java"
+    if [ ! -x "$java_cmd" ]; then
+      echo "Error: JAVA_HOME is set to \"$JAVA_HOME\", but \"$java_cmd\" was not found there." >&2
+      echo "Fix JAVA_HOME, or install a JDK 21 or newer and try again." >&2
+      exit 1
+    fi
+  elif command -v java >/dev/null 2>&1; then
+    java_cmd="$(command -v java)"
+  else
+    echo "Error: no Java installation found (JAVA_HOME is not set and 'java' is not on PATH)." >&2
+    echo "Install a JDK 21 or newer and try again." >&2
+    exit 1
+  fi
+
+  local version_string major
+  version_string="$("$java_cmd" -version 2>&1 | sed -n 's/.*version "\([^"]*\)".*/\1/p' | head -n 1)"
+  case "$version_string" in
+    1.*) major="${version_string#1.}"; major="${major%%.*}" ;;
+    *) major="${version_string%%.*}" ;;
+  esac
+
+  case "$major" in
+    ''|*[!0-9]*)
+      echo "Error: could not determine the Java version (checked: $java_cmd)." >&2
+      echo "Java 21 or newer is required for './mvnw verify'; see the README." >&2
+      exit 1
+      ;;
+  esac
+
+  if [ "$major" -lt 21 ]; then
+    echo "Error: Java $major was found, but './mvnw verify' requires Java 21 or newer." >&2
+    echo "Install a JDK 21 or newer, or point JAVA_HOME at one, and try again." >&2
+    exit 1
+  fi
+}
+
 ensure_env_file() {
   if [ -f .env ]; then
     return 0
@@ -149,6 +201,7 @@ run_app() {
 run_test() {
   check_repo_root
   check_docker
+  check_java
   ensure_env_file
 
   echo "Running ./mvnw verify (includes Testcontainers PostgreSQL integration tests)..."

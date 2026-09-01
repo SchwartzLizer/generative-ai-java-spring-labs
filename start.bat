@@ -98,6 +98,8 @@ call :check_repo_root
 if errorlevel 1 exit /b 1
 call :check_docker
 if errorlevel 1 exit /b 1
+call :check_java
+if errorlevel 1 exit /b 1
 call :ensure_env_file
 if errorlevel 1 exit /b 1
 
@@ -139,6 +141,67 @@ if errorlevel 1 (
   exit /b 1
 )
 exit /b 0
+
+REM Java is required for the 'test' path only (mvnw.cmd runs the build on
+REM the host); the run path never needs it, since Docker Compose builds
+REM inside containers. Apache Maven's own launcher script -- 'bin\mvn.cmd'
+REM inside the distribution mvnw.cmd downloads -- resolves the JVM the same
+REM way on both platforms: JAVA_HOME when it is set, otherwise 'java' on
+REM PATH. This check follows that same order so it reports on the JVM that
+REM will actually run the build.
+REM
+REM 'java -version' output changed shape at Java 9: modern JDKs report a
+REM bare major version ("21.0.12"), while Java 8 and earlier report
+REM "1.8.0_412". Both shapes are parsed below so an old JDK is not misread
+REM as a new one. The output itself goes to stderr and is never echoed,
+REM only the number parsed out of it.
+:check_java
+if "%JAVA_HOME%"=="" goto check_java_from_path
+if exist "%JAVA_HOME%\bin\java.exe" goto check_java_home_ok
+echo Error: JAVA_HOME is set to "%JAVA_HOME%", but "%%JAVA_HOME%%\bin\java.exe" was not found there. 1>&2
+echo Fix JAVA_HOME, or install a JDK 21 or newer and try again. 1>&2
+exit /b 1
+
+:check_java_home_ok
+set "JAVACMD=%JAVA_HOME%\bin\java.exe"
+goto check_java_have_cmd
+
+:check_java_from_path
+for %%i in (java.exe) do set "JAVACMD=%%~$PATH:i"
+if not "%JAVACMD%"=="" goto check_java_have_cmd
+echo Error: no Java installation found (JAVA_HOME is not set and 'java' is not on PATH). 1>&2
+echo Install a JDK 21 or newer and try again. 1>&2
+exit /b 1
+
+:check_java_have_cmd
+REM Written to a temp file rather than piped straight into a for /f command
+REM substitution: JAVACMD is quoted to survive spaces in the install path
+REM (e.g. "C:\Program Files\..."), and a quoted path as the first token of
+REM a for /f ('...') command confuses cmd.exe's own quote handling.
+set "JAVA_VERSION_TMP=%TEMP%\start_bat_java_version.tmp"
+"%JAVACMD%" -version >"%JAVA_VERSION_TMP%" 2>&1
+set "JAVA_VERSION_STRING="
+for /f "tokens=3" %%v in ('findstr /i "version" "%JAVA_VERSION_TMP%"') do if not defined JAVA_VERSION_STRING set "JAVA_VERSION_STRING=%%~v"
+del /f /q "%JAVA_VERSION_TMP%" >nul 2>&1
+if "%JAVA_VERSION_STRING%"=="" goto check_java_unparseable
+
+set "JAVA_MAJOR=%JAVA_VERSION_STRING%"
+if "%JAVA_MAJOR:~0,2%"=="1." set "JAVA_MAJOR=%JAVA_MAJOR:~2%"
+for /f "delims=._" %%m in ("%JAVA_MAJOR%") do set "JAVA_MAJOR=%%m"
+if "%JAVA_MAJOR%"=="" goto check_java_unparseable
+
+echo %JAVA_MAJOR%| findstr /r "^[0-9][0-9]*$" >nul
+if errorlevel 1 goto check_java_unparseable
+
+if %JAVA_MAJOR% GEQ 21 exit /b 0
+echo Error: Java %JAVA_MAJOR% was found, but "mvnw.cmd verify" requires Java 21 or newer. 1>&2
+echo Install a JDK 21 or newer, or point JAVA_HOME at one, and try again. 1>&2
+exit /b 1
+
+:check_java_unparseable
+echo Error: could not determine the Java version (checked: %JAVACMD%). 1>&2
+echo Java 21 or newer is required for "mvnw.cmd verify"; see the README. 1>&2
+exit /b 1
 
 :ensure_env_file
 if exist ".env" exit /b 0
