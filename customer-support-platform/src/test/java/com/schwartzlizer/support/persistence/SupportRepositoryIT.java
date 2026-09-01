@@ -24,11 +24,16 @@ import static org.assertj.core.api.Assertions.*;
 class SupportRepositoryIT {
     @Container @ServiceConnection
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
-    @Autowired FeedbackRepository feedbackRepository;
-    @Autowired ResponseDraftRepository responseDraftRepository;
-    @Autowired JdbcTemplate jdbcTemplate;
-    @Test void persistsFeedbackWithOptimisticVersion() {
-        Instant now=Instant.parse("2026-08-28T12:00:00Z"); Feedback saved=feedbackRepository.saveAndFlush(Feedback.create(UUID.randomUUID(),"CUST-001","App crashes",now));
+    @Autowired
+    FeedbackRepository feedbackRepository;
+    @Autowired
+    ResponseDraftRepository responseDraftRepository;
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+    @Test
+    void persistsFeedbackWithOptimisticVersion() {
+        Instant now=Instant.parse("2026-08-28T12:00:00Z");
+        Feedback saved=feedbackRepository.saveAndFlush(Feedback.create(UUID.randomUUID(),"CUST-001","App crashes",now));
         assertThat(feedbackRepository.findById(saved.id())).get().extracting(Feedback::status).isEqualTo(FeedbackStatus.NEW);
     }
 
