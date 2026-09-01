@@ -11,13 +11,19 @@ print_usage() {
   cat <<'EOF'
 Usage: start.sh [help|test]
 
-  (no argument)  Start the application: check prerequisites, then run
-                 'docker compose up --build'.
+  (no argument)  Start the application: check prerequisites, build and
+                 start the containers, wait until the app is ready, then
+                 open the dashboard in your browser.
   test           Run the full verification suite ('./mvnw verify'),
                  including the Testcontainers PostgreSQL integration tests.
   help           Show this help message and exit.
 EOF
 }
+
+DASHBOARD_URL="http://localhost:8080/dashboard"
+HEALTH_URL="http://localhost:8080/actuator/health"
+HEALTH_TIMEOUT_SECONDS=300
+HEALTH_POLL_INTERVAL_SECONDS=3
 
 # Always operate from the repository root, regardless of where the script
 # was invoked from.
@@ -57,19 +63,87 @@ ensure_env_file() {
   echo ".env not found. Created it by copying .env.example."
 }
 
+check_curl() {
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "Error: 'curl' is required to detect when the application is ready, but it was not found." >&2
+    exit 1
+  fi
+}
+
+# The 'app' service has no Docker healthcheck (only 'postgres' does), so
+# 'docker compose ps' can only tell us the container is running, which
+# happens minutes before Spring finishes starting. '/actuator/health' is
+# permitted without authentication and reflects the app's own readiness,
+# so we poll it directly instead.
+wait_for_health() {
+  echo -n "Waiting for the application to start"
+  local waited=0
+  while [ "$waited" -lt "$HEALTH_TIMEOUT_SECONDS" ]; do
+    if curl --fail --silent --output /dev/null "$HEALTH_URL"; then
+      echo ""
+      echo "The application is up."
+      return 0
+    fi
+    echo -n "."
+    sleep "$HEALTH_POLL_INTERVAL_SECONDS"
+    waited=$((waited + HEALTH_POLL_INTERVAL_SECONDS))
+  done
+  echo ""
+  echo "Error: timed out after ${HEALTH_TIMEOUT_SECONDS}s waiting for $HEALTH_URL to respond." >&2
+  echo "The containers are still running; inspect what is happening with 'docker compose logs'." >&2
+  return 1
+}
+
+# Best-effort browser launch: detected by platform rather than assumed, and
+# never treated as fatal. Headless environments (CI, WSL, a container) just
+# get the printed URL instead.
+open_browser() {
+  local url="$1"
+  local opener=""
+  case "$(uname -s 2>/dev/null)" in
+    Darwin) opener="open" ;;
+    Linux) opener="xdg-open" ;;
+    MINGW*|MSYS*|CYGWIN*) opener="start" ;;
+  esac
+  if [ -n "$opener" ] && command -v "$opener" >/dev/null 2>&1 && "$opener" "$url" >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "Could not open a browser automatically. Open $url manually."
+  return 1
+}
+
 run_app() {
   check_repo_root
   check_docker
+  check_curl
   ensure_env_file
 
   echo ""
-  echo "Once the application is ready, open http://localhost:8080/dashboard"
-  echo "and sign in with the credentials from your local .env file"
+  echo "Starting the application. The first run can take several minutes"
+  echo "while Docker images are built and dependencies are downloaded."
+  echo ""
+  echo "Sign in with the credentials from your local .env file"
   echo "(APP_AGENT_USERNAME / APP_AGENT_PASSWORD, or APP_ADMIN_USERNAME / APP_ADMIN_PASSWORD)."
-  echo "Press Ctrl+C to stop, then run 'docker compose down' to remove the containers."
+  echo "The application keeps running in the background after this script exits."
+  echo "Press Ctrl+C to stop following the logs; run 'docker compose down' when you are done."
   echo ""
 
-  docker compose up --build
+  if ! docker compose up -d --build; then
+    echo "" >&2
+    echo "Error: 'docker compose up --build' failed; see the output above for the reason." >&2
+    exit 1
+  fi
+
+  if ! wait_for_health; then
+    exit 1
+  fi
+
+  echo "Opening $DASHBOARD_URL"
+  open_browser "$DASHBOARD_URL" || true
+
+  echo ""
+  echo "Following logs (Ctrl+C stops watching, the application keeps running)..."
+  docker compose logs -f
 }
 
 run_test() {

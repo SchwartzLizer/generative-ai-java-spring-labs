@@ -10,6 +10,12 @@ REM Always operate from the repository root, regardless of where the
 REM script was invoked from (double-click, cmd.exe, or a shortcut).
 cd /d "%~dp0"
 
+set "DASHBOARD_URL=http://localhost:8080/dashboard"
+set "HEALTH_URL=http://localhost:8080/actuator/health"
+set /a HEALTH_TIMEOUT_SECONDS=300
+set /a HEALTH_POLL_INTERVAL_SECONDS=3
+set /a HEALTH_POLL_PING_COUNT=HEALTH_POLL_INTERVAL_SECONDS+1
+
 set "COMMAND=%~1"
 
 if "%COMMAND%"=="" goto :dispatch_run
@@ -49,20 +55,42 @@ call :check_repo_root
 if errorlevel 1 exit /b 1
 call :check_docker
 if errorlevel 1 exit /b 1
+call :check_curl
+if errorlevel 1 exit /b 1
 call :ensure_env_file
 if errorlevel 1 exit /b 1
 
 echo.
-echo Once the application is ready, open http://localhost:8080/dashboard
-echo and sign in with the credentials from your local .env file
+echo Starting the application. The first run can take several minutes
+echo while Docker images are built and dependencies are downloaded.
+echo.
+echo Sign in with the credentials from your local .env file
 echo (APP_AGENT_USERNAME / APP_AGENT_PASSWORD, or APP_ADMIN_USERNAME / APP_ADMIN_PASSWORD).
-echo Press Ctrl+C to stop, then run "docker compose down" to remove the containers.
+echo The application keeps running in the background after this script exits.
+echo Press Ctrl+C to stop following the logs; run "docker compose down" when you are done.
 echo.
 
 REM Invoked as docker.exe (not the bare "docker") because Docker Desktop's
 REM bin directory also ships an extension-less "docker" POSIX script for
 REM Git Bash/WSL; leaving the extension off here is ambiguous for cmd.exe.
-docker.exe compose up --build
+REM Started detached (-d) so this script can poll readiness below instead
+REM of blocking on the build/app log stream.
+docker.exe compose up -d --build
+if errorlevel 1 (
+  echo. 1>&2
+  echo Error: "docker compose up --build" failed; see the output above for the reason. 1>&2
+  exit /b 1
+)
+
+call :wait_for_health
+if errorlevel 1 exit /b 1
+
+echo Opening %DASHBOARD_URL%
+call :open_browser "%DASHBOARD_URL%"
+
+echo.
+echo Following logs (Ctrl+C stops watching, the application keeps running)...
+docker.exe compose logs -f
 exit /b %errorlevel%
 
 :run_test
@@ -80,8 +108,9 @@ exit /b %errorlevel%
 :print_usage
 echo Usage: start.bat [help^|test]
 echo.
-echo   (no argument)  Start the application: check prerequisites, then run
-echo                  'docker compose up --build'.
+echo   (no argument)  Start the application: check prerequisites, build and
+echo                  start the containers, wait until the app is ready, then
+echo                  open the dashboard in your browser.
 echo   test           Run the full verification suite ('mvnw.cmd verify'),
 echo                  including the Testcontainers PostgreSQL integration tests.
 echo   help           Show this help message and exit.
@@ -119,4 +148,51 @@ if not exist ".env.example" (
 )
 copy /y ".env.example" ".env" >nul
 echo .env not found. Created it by copying .env.example.
+exit /b 0
+
+:check_curl
+curl.exe --version >nul 2>&1
+if errorlevel 1 (
+  echo Error: 'curl' is required to detect when the application is ready, but it was not found. 1>&2
+  exit /b 1
+)
+exit /b 0
+
+REM The 'app' service has no Docker healthcheck (only 'postgres' does), so
+REM 'docker compose ps' can only tell us the container is running, which
+REM happens minutes before Spring finishes starting. '/actuator/health' is
+REM permitted without authentication and reflects the app's own readiness,
+REM so we poll it directly instead.
+:wait_for_health
+set /a waited=0
+<nul set /p "=Waiting for the application to start"
+:wait_for_health_loop
+curl.exe --fail --silent --output nul "%HEALTH_URL%" >nul 2>&1
+if not errorlevel 1 goto :wait_for_health_ready
+if %waited% GEQ %HEALTH_TIMEOUT_SECONDS% goto :wait_for_health_timeout
+<nul set /p "=."
+ping -n %HEALTH_POLL_PING_COUNT% 127.0.0.1 >nul
+set /a waited+=HEALTH_POLL_INTERVAL_SECONDS
+goto :wait_for_health_loop
+
+:wait_for_health_ready
+echo.
+echo The application is up.
+exit /b 0
+
+:wait_for_health_timeout
+echo.
+echo Error: timed out after %HEALTH_TIMEOUT_SECONDS%s waiting for %HEALTH_URL% to respond. 1>&2
+echo The containers are still running; inspect what is happening with "docker compose logs". 1>&2
+exit /b 1
+
+REM Best-effort browser launch. If it fails (headless box, no default
+REM handler configured) that is not an error: the URL was already printed,
+REM so the reader can open it by hand.
+:open_browser
+start "" "%~1" >nul 2>&1
+if errorlevel 1 (
+  echo Could not open a browser automatically. Open %~1 manually.
+  exit /b 1
+)
 exit /b 0

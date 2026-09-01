@@ -26,7 +26,7 @@ On Windows, from Command Prompt or PowerShell:
 start.bat
 ```
 
-The script checks that Docker Desktop is running, creates `.env` from `.env.example` on first run, and then runs `docker compose up --build`. Run `./start.sh test` (or `start.bat test`) instead to run the full Maven verification, and `./start.sh help` (or `start.bat help`) for usage.
+The script checks that Docker Desktop is running, creates `.env` from `.env.example` on first run, builds and starts the containers, waits until the app responds on `/actuator/health`, then opens the dashboard in your browser (or prints the URL if it can't). The app keeps running after the script exits; run `docker compose down` when you're done. Run `./start.sh test` (or `start.bat test`) instead to run the full Maven verification, and `./start.sh help` (or `start.bat help`) for usage.
 
 Or run the same steps by hand:
 
