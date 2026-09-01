@@ -102,7 +102,7 @@ flowchart TB
     BC4["Support Operations read model"]
     SK["Shared kernel"]
   end
-  BC2 -->|"in-process, same transaction"| BC1
+  BC2 -->|"in-process, persist step, same transaction"| BC1
   BC3 -.->|"reads"| BC2
   BC3 -.->|"reads"| BC1
   BC4 -.->|"one count per enum constant"| BC1
