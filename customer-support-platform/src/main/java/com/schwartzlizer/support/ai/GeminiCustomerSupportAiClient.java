@@ -17,7 +17,9 @@ public final class GeminiCustomerSupportAiClient implements CustomerSupportAiCli
         } catch (AiProviderException e) { throw e; } catch (Exception e) { throw new AiProviderException("AI provider returned invalid analysis", e); }
     }
     @Override public ResponseDraftResult draftResponse(String message, FeedbackAnalysisResult analysis) {
-        String raw=gateway.complete(responsePrompts.create(message, analysis)); if (raw == null || raw.isBlank()) throw new AiProviderException("AI provider returned an empty response"); return new ResponseDraftResult(raw);
+        try {
+            String raw=gateway.complete(responsePrompts.create(message, analysis)); if (raw == null || raw.isBlank()) throw new AiProviderException("AI provider returned an empty response"); return new ResponseDraftResult(raw);
+        } catch (AiProviderException e) { throw e; } catch (Exception e) { throw new AiProviderException("AI provider request failed", e); }
     }
     private String stripFences(String raw) { String value=raw.trim(); if(value.startsWith("```")){ value=value.replaceFirst("^```(?:json)?\\s*","").replaceFirst("\\s*```$",""); } return value; }
 }
