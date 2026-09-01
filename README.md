@@ -15,6 +15,18 @@ Course credentials: Coursera *Generative AI for Java and Spring Development* —
 You need Java 21 or newer, Docker Desktop, and the Maven Wrapper included in this repository.
 
 ```powershell
+./start.sh
+```
+
+```cmd
+start.bat
+```
+
+The script checks that Docker Desktop is running, creates `.env` from `.env.example` on first run, and then runs `docker compose up --build`. Run `./start.sh test` (or `start.bat test`) instead to run the full Maven verification, and `./start.sh help` (or `start.bat help`) for usage.
+
+Or run the same steps by hand:
+
+```powershell
 copy .env.example .env
 docker compose up --build
 ```
