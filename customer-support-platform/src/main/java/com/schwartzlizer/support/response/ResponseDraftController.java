@@ -30,7 +30,11 @@ public class ResponseDraftController {
      * @throws com.schwartzlizer.support.common.AiProviderException if the AI provider is unavailable; surfaces
      *         as HTTP 503
      */
-    @PostMapping("/feedback/{feedbackId}/response-drafts") public ResponseEntity<ResponseDraftResponse> generate(@PathVariable("feedbackId") UUID feedbackId) { ResponseDraftResponse response=service.generate(feedbackId); return ResponseEntity.created(URI.create("/api/v1/response-drafts/"+response.id())).body(response); }
+    @PostMapping("/feedback/{feedbackId}/response-drafts")
+    public ResponseEntity<ResponseDraftResponse> generate(@PathVariable("feedbackId") UUID feedbackId) {
+        ResponseDraftResponse response=service.generate(feedbackId);
+        return ResponseEntity.created(URI.create("/api/v1/response-drafts/"+response.id())).body(response);
+    }
     /**
      * Records the agent's approval or rejection of a draft.
      *
@@ -47,5 +51,6 @@ public class ResponseDraftController {
      * @throws org.springframework.orm.ObjectOptimisticLockingFailureException if a concurrent request decided
      *         the same draft first; surfaces as HTTP 409
      */
-    @PatchMapping("/response-drafts/{draftId}/decision") public ResponseDraftResponse decide(@PathVariable("draftId") UUID draftId, @Valid @RequestBody DraftDecisionRequest request) { return service.decide(draftId, request.decision()); }
+    @PatchMapping("/response-drafts/{draftId}/decision")
+    public ResponseDraftResponse decide(@PathVariable("draftId") UUID draftId, @Valid @RequestBody DraftDecisionRequest request) { return service.decide(draftId, request.decision()); }
 }

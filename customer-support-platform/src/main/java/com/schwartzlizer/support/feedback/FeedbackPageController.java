@@ -10,5 +10,9 @@ import java.util.UUID;
 public class FeedbackPageController {
     private final FeedbackService service;
     public FeedbackPageController(FeedbackService service) { this.service=service; }
-    @GetMapping("/feedback/{id}") public String detail(@PathVariable("id") UUID id, Model model) { model.addAttribute("feedback", service.get(id)); return "feedback-detail"; }
+    @GetMapping("/feedback/{id}")
+    public String detail(@PathVariable("id") UUID id, Model model) {
+        model.addAttribute("feedback", service.get(id));
+        return "feedback-detail";
+    }
 }

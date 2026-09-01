@@ -31,7 +31,11 @@ public class FeedbackController {
      * @return 201 Created with the stored feedback in the body
      * @throws IllegalArgumentException if the payload violates the domain invariants; surfaces as HTTP 400
      */
-    @PostMapping public ResponseEntity<FeedbackResponse> submit(@Valid @RequestBody SubmitFeedbackRequest request) { FeedbackResponse response=service.submit(request); return ResponseEntity.created(URI.create("/api/v1/feedback/"+response.id())).body(response); }
+    @PostMapping
+    public ResponseEntity<FeedbackResponse> submit(@Valid @RequestBody SubmitFeedbackRequest request) {
+        FeedbackResponse response=service.submit(request);
+        return ResponseEntity.created(URI.create("/api/v1/feedback/"+response.id())).body(response);
+    }
     /**
      * Returns a page of feedback items, newest first.
      *
@@ -41,7 +45,8 @@ public class FeedbackController {
      * @param pageable page and size from the request query string
      * @return the requested page of feedback views
      */
-    @GetMapping public Page<FeedbackResponse> list(@PageableDefault(size=20, sort="createdAt") Pageable pageable) { return service.list(pageable); }
+    @GetMapping
+    public Page<FeedbackResponse> list(@PageableDefault(size=20, sort="createdAt") Pageable pageable) { return service.list(pageable); }
     /**
      * Returns one feedback item with its analysis and draft history.
      *
@@ -50,7 +55,8 @@ public class FeedbackController {
      * @throws com.schwartzlizer.support.common.ResourceNotFoundException if no feedback exists with that id;
      *         surfaces as HTTP 404
      */
-    @GetMapping("/{id}") public FeedbackResponse get(@PathVariable("id") UUID id) { return service.get(id); }
+    @GetMapping("/{id}")
+    public FeedbackResponse get(@PathVariable("id") UUID id) { return service.get(id); }
     /**
      * Applies a status transition to one feedback item.
      *
@@ -62,5 +68,6 @@ public class FeedbackController {
      * @throws com.schwartzlizer.support.common.InvalidStateTransitionException if the transition is not
      *         permitted from the current status; surfaces as HTTP 409
      */
-    @PatchMapping("/{id}/status") public FeedbackResponse changeStatus(@PathVariable("id") UUID id, @Valid @RequestBody UpdateFeedbackStatusRequest request) { return service.changeStatus(id, request.status()); }
+    @PatchMapping("/{id}/status")
+    public FeedbackResponse changeStatus(@PathVariable("id") UUID id, @Valid @RequestBody UpdateFeedbackStatusRequest request) { return service.changeStatus(id, request.status()); }
 }

@@ -23,5 +23,6 @@ public class DashboardController {
      *
      * @return the dashboard counter snapshot
      */
-    @GetMapping("/summary") public DashboardSummary summary() { return service.summary(); }
+    @GetMapping("/summary")
+    public DashboardSummary summary() { return service.summary(); }
 }

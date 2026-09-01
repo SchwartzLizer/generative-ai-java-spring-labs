@@ -13,15 +13,18 @@ import java.util.UUID;
 
 @Configuration
 public class SecurityConfiguration {
-    @Bean PasswordEncoder passwordEncoder() { return PasswordEncoderFactories.createDelegatingPasswordEncoder(); }
-    @Bean UserDetailsService userDetailsService(SecurityProperties properties, PasswordEncoder encoder) {
+    @Bean
+    PasswordEncoder passwordEncoder() { return PasswordEncoderFactories.createDelegatingPasswordEncoder(); }
+    @Bean
+    UserDetailsService userDetailsService(SecurityProperties properties, PasswordEncoder encoder) {
         String agentPassword = properties.agentPassword().isBlank() ? UUID.randomUUID().toString() : properties.agentPassword();
         String adminPassword = properties.adminPassword().isBlank() ? UUID.randomUUID().toString() : properties.adminPassword();
         return new InMemoryUserDetailsManager(
             User.withUsername(properties.agentUsername()).password(encoder.encode(agentPassword)).roles("AGENT").build(),
             User.withUsername(properties.adminUsername()).password(encoder.encode(adminPassword)).roles("AGENT", "ADMIN").build());
     }
-    @Bean SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
             .requestMatchers("/actuator/health/**", "/login", "/css/**", "/error").permitAll()
             .requestMatchers("/actuator/info").hasRole("ADMIN")
